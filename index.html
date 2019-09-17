@@ -1,0 +1,84 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>HNG Challenge 1 | Better Crumbs</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/6.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.6.1/firebase-firestore.js"></script>
+</head>
+
+<body>
+  <section id="login" class="login">
+    <h1>Login to Better Crumbs</h1>
+    <form id="login-form" class="form" method="post" action="">
+      <p><input type="text" name="username" id="login-email" value="" placeholder="Username or Email"></p>
+      <p><input id="login-password" type="password" name="password" value="" placeholder="Password"></p>
+      <p class="remember_me">
+        <label>
+          <input type="checkbox" name="remember_me" id="remember_me">
+          Remember me!
+        </label>
+      </p>
+    </form>
+    <p class="submit"><button id = "login-button" >Login</button></p>
+
+  </section>
+  <section id="signup" class="login">
+    <h1>Sign Up to Better Crumbs</h1>
+    <form id="signup-form" class="form" method="post" action="">
+      <p><input type="text" id="signup-username" name="username" value="" placeholder="Choose a username"></p>
+      <p><input type="email" name="email" id="signup-email" value="" placeholder="Your Email"></p>
+      <p><input type="password" id="signup-password" name="password" value="" placeholder="Choose a Password"></p>
+      <p><input type="password" id="signup-re-password" name="password" value="" placeholder="Retype Password"></p>
+    </form>
+    <p class="submit"><button id = "signup-button" >Sign Up</button></p>
+  </section>
+  <div class="login-help">
+    <p id="forgot-password">Forgot your password? <a href="#">Click here to reset it</a>.</p>
+    <p id="click-to-signup">Not a member yet? <a href="#">Click here to sign up</a>.</p>
+    <p id="click-to-login">Already a member yet? <a href="#">Click here to login</a>.</p>
+  </div>
+  <div id="success">Sign&nbsp;Up&nbsp;Successful</div>
+
+
+
+  <script>
+    const $ = n => document.querySelector(n);
+    $('#click-to-signup').onclick = () => {
+      $('#login').style.display = "none";
+      $('#signup').style.display = "block";
+      $('#click-to-login').style.display = "block";
+      $('#click-to-signup').style.display = "none";
+      $('#forgot-password').style.display = "none";
+    }
+    $('#click-to-login').onclick = () => {
+      $('#login').style.display = "block";
+      $('#signup').style.display = "none";
+      $('#click-to-login').style.display = "none";
+      $('#click-to-signup').style.display = "block";
+      $('#forgot-password').style.display = "block";
+    }
+  
+    // Your web app's Firebase configuration
+    var firebaseConfig = {
+      apiKey: "AIzaSyAg7S6-WdJhc0QCX-aTeJT6ts8FNVXiIa0",
+      authDomain: "hng-first-task.firebaseapp.com",
+      databaseURL: "https://hng-first-task.firebaseio.com",
+      projectId: "hng-first-task",
+      storageBucket: "",
+      messagingSenderId: "380526995854",
+      appId: "1:380526995854:web:fcfd270b120ab0758a5cdf"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
+  <script src="./auth.js"></script>
+</body>
+
+</html>
