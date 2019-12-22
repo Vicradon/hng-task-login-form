@@ -13,28 +13,78 @@ const nodes = {
   enterContent: $('.enter-content'),
   submitPost: $('.submit-post'),
   normalPostFlow: $('.normal-post-flow'),
+  updatePost: $('.update-post')
 }
 
 const { enterTitle,
   enterContent,
   submitPost,
-  normalPostFlow
+  normalPostFlow,
+  updatePost
 } = nodes;
 
+db.enablePersistence()
+  .catch(err => {
+    if (err.code === 'failed-precondition') {
+      snack('Close all tabs where this app is open');
+      log('Multiple tabs preventing offline behavior', err)
+    }
+    else if (err.code === 'unimplemented') {
+      snack("Your browser doesn't support offline mode.");
+      log("Browser doesn't support offline mode.", err)
+    }
+  })
+
 const postsDoc = db.collection('users').doc(uid);
-displayPosts();
+// postsDoc.set({posts:[{id:1, title:'a post', content:"More stuff"}]})
+displayPosts()
+
+
+function updateMode() {
+  submitPost.style.display = 'none'
+  updatePost.style.display = 'block'
+}
+function submitMode() {
+  submitPost.style.display = 'block'
+  updatePost.style.display = 'none'
+}
 
 function deletePost(id) {
-  const newPosts = posts.filter(x => x.id !== +id);
-  displayPosts(newPosts);
+  postsDoc.get()
+    .then(res => {
+      const newPosts = res.data().posts.filter(x => x.id !== +id);
+      if (navigator.onLine) {
+        postsDoc.set({ posts: newPosts })
+          .then(() => {
+            snack("Delete Successful!")
+            displayPosts();
+          })
+          .catch(err => {
+            snack("Delete unsuccessful!")
+            log(err)
+          })
+      }
+      else {
+        postsDoc.set({ posts: newPosts })
+        snack("Delete Successful!")
+        displayPosts();
+      }
+    })
 }
 
 function editPost(id) {
-  const post = posts.filter(post => post.id === +id)[0];
-  const newPosts = posts.filter(x => x.id !== +id);
-
-  enterTitle.value = post.title;
-  enterContent.value = post.content;
+  postsDoc.get()
+    .then(res => {
+      const prevPosts = res.data().posts;
+      const post = prevPosts.filter(post => post.id === +id)[0];
+      updateMode();
+      enterTitle.value = post.title;
+      enterContent.value = post.content;
+      updatePost.onclick = () => {
+        handleSubmit(post.id);
+        submitMode();
+      }
+    })
 }
 
 normalPostFlow.onclick = ({ target }) => {
@@ -96,13 +146,14 @@ function enableSubmit() {
   submitPost.style.cursor = 'pointer';
 }
 
-submitPost.onclick = () => {
+// db.collection('users').doc(uid).set({ posts: [{ id: 1, title: 'a post', content: "More stuff" }] })
+
+function handleSubmit(id = 1) {
   if (enterTitle.value.trim().length !== 0 && enterContent.value.trim().length !== 0) {
     disableSubmit();
     postsDoc.get()
       .then(res => {
         if (res.data()) {
-          let id = 1;
           const prevPosts = res.data().posts;
           if (prevPosts.length > 0) {
             id = Math.max(...prevPosts.map(x => x.id)) + 1;
@@ -112,6 +163,12 @@ submitPost.onclick = () => {
             content: enterContent.value.trim(),
             id
           }
+          db.collection('users').doc(uid).get().then(res => {
+            db.collection('users').doc(uid).set({ posts: [...res.data().posts, { id: 1, title: 'a post', content: "More stuff" }] })
+              .then(log(34))
+          })
+          /*
+          // if (navigator.onLine) {
           postsDoc.set({ posts: [...prevPosts, newPost] })
             .then(() => {
               snack("Posted successfully");
@@ -122,35 +179,84 @@ submitPost.onclick = () => {
               snack("Sorry, an error occured");
               enableSubmit()
             })
+          // }
+          // else {
+          // postsDoc.set({ posts: [...prevPosts, newPost] })
+          // snack("Posted successfully");
+          // displayPosts()
+          // enableSubmit()
+          // }
+        }
+        */
         }
         else {
-          postsDoc.set({
-            posts: [{
-              title: enterTitle.value.trim(),
-              content: enterContent.value.trim(),
-              id:1
-            }]
-          }).then(() => {
-            snack("Posted successfully");
-            enableSubmit()
-            displayPosts()
-          }).catch(err => {
-            console.log(err);
-            snack("Sorry, an error occured");
-            enableSubmit()
+          // if (navigator.onLine) {
+          db.collection('users').doc(uid).get().then(res => {
+            db.collection('users').doc(uid).set({ posts: [{ id: 1, title: 'a post', content: "More stuff" }] })
+              .then(() => {
+                snack("Posted successfully");
+                enableSubmit()
+                displayPosts()
+              }).catch(err => {
+                console.log(err);
+                snack("Sorry, an error occured");
+                enableSubmit()
+              })
           })
+          // postsDoc.set({
+          //   posts: [{
+          //     title: enterTitle.value.trim(),
+          //     content: enterContent.value.trim(),
+          //     id: id
+          //   }]
+          // }).then(() => {
+          //   snack("Posted successfully");
+          //   enableSubmit()
+          //   displayPosts()
+          // }).catch(err => {
+          //   console.log(err);
+          //   snack("Sorry, an error occured");
+          //   enableSubmit()
+          // })
+
+
+
+          // else {
+          //   postsDoc.set({
+          //     posts: [{
+          //       title: enterTitle.value.trim(),
+          //       content: enterContent.value.trim(),
+          //       id
+          //     }]
+          //   })
+          //   snack("Posted successfully");
+          //   enableSubmit()
+          //   displayPosts()
+          // }
         }
       })
+      .catch(err => log("Error occured while submitting the post", err))
   }
 }
+
+submitPost.onclick = handleSubmit;
 
 function displayPosts() {
   postsDoc.get()
     .then(res => {
       let a = '';
       if (res.data()) {
-        res.data().posts.forEach(x => a += postComp(x.title, x.content, x.id))
+        const posts = res.data().posts.sort((a, b) => b.id - a.id);
+        posts.forEach(x => a += postComp(x.title, x.content, x.id))
       }
       normalPostFlow.innerHTML = a;
+      $('#loader').style.display = 'none'
+      if (!normalPostFlow.hasChildNodes()) {
+        $('.no-post-yet').style.display = 'block'
+      }
+      else {
+        $('.no-post-yet').style.display = 'none'
+      }
     })
+    .catch(err => log(err))
 }
