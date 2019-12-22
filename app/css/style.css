@@ -1,0 +1,111 @@
+:root {
+  --primaty-color:steelblue;
+}
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+.index-main, .request-container{
+  margin: 3rem 2rem;
+}
+nav {
+  background-color: steelblue;
+  padding: 0.5rem;
+  display: flex;
+  justify-content: space-around;
+  position: fixed;
+  width: 100%;
+  top: 0;
+}
+nav a {
+  color: white;
+  text-decoration: none;
+}
+nav a:hover {
+  text-decoration: underline;
+}
+button {
+  padding: 0.1rem 0.4rem;
+}
+input, textarea {
+  padding: 0.3rem;
+  font-family: inherit;
+  border: 1px solid steelblue;
+  border-radius: 3px;
+  outline-color: steelblue;
+}
+
+.post {
+  border: 1px solid var(--primaty-color);
+  padding: 5px 10px;
+}
+.post-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.post-actions button:not(:last-child) {
+  margin-right: 5px;
+}
+
+.posts-section {
+  display: grid;
+  margin: 2rem;
+}
+
+.normal-post-flow, .requested-posts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  row-gap: 1rem;
+  column-gap: 2rem;
+  padding: 2rem;
+}
+
+.scale-down-center {
+	-webkit-animation: scale-down-center 0.8s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+	        animation: scale-down-center 0.8s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+}
+
+@media(max-width: 1000px) {
+  .normal-post-flow, .requested-posts {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+@media(max-width: 750px) {
+  .normal-post-flow, .requested-posts {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .post-add-request {
+    grid-template-columns: 1fr;
+    row-gap: 2rem;
+  }
+
+  .normal-post-flow, .requested-posts {
+    padding: 0.5rem;
+  }
+}
+
+@media(max-width: 450px) {
+  .normal-post-flow, .requested-posts {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+
+  .post-form {
+    width: calc(100vw - 65px) !important;
+  }
+  .add-post {
+    justify-content: flex-start !important;
+  }
+}
+
+.edit-true {
+  border: 2px solid orange;
+}
+.submit-post{
+  cursor: pointer;
+}
