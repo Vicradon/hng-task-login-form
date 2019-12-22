@@ -13,14 +13,16 @@ const nodes = {
   enterContent: $('.enter-content'),
   submitPost: $('.submit-post'),
   normalPostFlow: $('.normal-post-flow'),
-  updatePost: $('.update-post')
+  updatePost: $('.update-post'),
+  enterPost: document.querySelectorAll('.enter-post')
 }
 
 const { enterTitle,
   enterContent,
   submitPost,
   normalPostFlow,
-  updatePost
+  updatePost,
+  enterPost
 } = nodes;
 
 db.enablePersistence()
@@ -36,17 +38,18 @@ db.enablePersistence()
   })
 
 const postsDoc = db.collection('users').doc(uid);
-// postsDoc.set({posts:[{id:1, title:'a post', content:"More stuff"}]})
 displayPosts()
 
 
 function updateMode() {
   submitPost.style.display = 'none'
   updatePost.style.display = 'block'
+  enterPost.forEach(x => x.textContent = "Update Post")
 }
 function submitMode() {
   submitPost.style.display = 'block'
   updatePost.style.display = 'none'
+  enterPost.forEach(x => x.textContent = "Enter Post")
 }
 
 function deletePost(id) {
@@ -101,7 +104,9 @@ normalPostFlow.onclick = ({ target }) => {
   }
   else if (target.classList.contains('delete-post')) {
     const post = target.parentNode.parentNode;
-
+    document.querySelectorAll('.delete-post').forEach(post => {
+      post.setAttribute("disabled", true)
+    })
     post.classList.add('scale-down-center')
     post.addEventListener('animationend', () => {
       deletePost(post.dataset.id)
@@ -146,15 +151,16 @@ function enableSubmit() {
   submitPost.style.cursor = 'pointer';
 }
 
-// db.collection('users').doc(uid).set({ posts: [{ id: 1, title: 'a post', content: "More stuff" }] })
-
-function handleSubmit(id = 1) {
+function handleSubmit(id) {
   if (enterTitle.value.trim().length !== 0 && enterContent.value.trim().length !== 0) {
     disableSubmit();
     postsDoc.get()
       .then(res => {
         if (res.data()) {
-          const prevPosts = res.data().posts;
+          let prevPosts = res.data().posts;
+          if (id) {
+            prevPosts = res.data().posts.filter(x => x.id !== id);
+          }
           if (prevPosts.length > 0) {
             id = Math.max(...prevPosts.map(x => x.id)) + 1;
           }
@@ -163,36 +169,70 @@ function handleSubmit(id = 1) {
             content: enterContent.value.trim(),
             id
           }
-          db.collection('users').doc(uid).get().then(res => {
-            db.collection('users').doc(uid).set({ posts: [...res.data().posts, { id: 1, title: 'a post', content: "More stuff" }] })
-              .then(log(34))
-          })
-          /*
-          // if (navigator.onLine) {
-          postsDoc.set({ posts: [...prevPosts, newPost] })
-            .then(() => {
+
+          if (navigator.onLine) {
+            if (res.data().posts.length > 0) {
+              postsDoc.set({ posts: [...prevPosts, newPost] })
+                .then(() => {
+                  snack("Posted successfully");
+                  enableSubmit()
+                  displayPosts()
+                }).catch(err => {
+                  console.log(err);
+                  snack("Sorry, an error occured");
+                  enableSubmit()
+                })
+            }
+            else {
+              postsDoc.set({
+                posts: [{
+                  id: 1,
+                  title: enterTitle.value.trim(),
+                  content: enterContent.value.trim()
+                }]
+              })
+                .then(() => {
+                  snack("Posted successfully");
+                  enableSubmit()
+                  displayPosts()
+                }).catch(err => {
+                  console.log(err);
+                  snack("Sorry, an error occured");
+                  enableSubmit()
+                })
+            }
+
+          }
+          else {
+            if (res.data().posts.length > 0) {
+              postsDoc.set({ posts: [...prevPosts, newPost] })
               snack("Posted successfully");
-              enableSubmit()
               displayPosts()
-            }).catch(err => {
-              console.log(err);
-              snack("Sorry, an error occured");
               enableSubmit()
-            })
-          // }
-          // else {
-          // postsDoc.set({ posts: [...prevPosts, newPost] })
-          // snack("Posted successfully");
-          // displayPosts()
-          // enableSubmit()
-          // }
-        }
-        */
+            }
+            else {
+              postsDoc.set({
+                posts: [{
+                  id: 1,
+                  title: enterTitle.value.trim(),
+                  content: enterContent.value.trim()
+                }]
+              })
+              snack("Posted successfully");
+              displayPosts()
+              enableSubmit()
+            }
+          }
         }
         else {
-          // if (navigator.onLine) {
-          db.collection('users').doc(uid).get().then(res => {
-            db.collection('users').doc(uid).set({ posts: [{ id: 1, title: 'a post', content: "More stuff" }] })
+          postsDoc.get().then(res => {
+            postsDoc.set({
+              posts: [{
+                id: 1,
+                title: enterTitle.value.trim(),
+                content: enterContent.value.trim()
+              }]
+            })
               .then(() => {
                 snack("Posted successfully");
                 enableSubmit()
@@ -203,37 +243,9 @@ function handleSubmit(id = 1) {
                 enableSubmit()
               })
           })
-          // postsDoc.set({
-          //   posts: [{
-          //     title: enterTitle.value.trim(),
-          //     content: enterContent.value.trim(),
-          //     id: id
-          //   }]
-          // }).then(() => {
-          //   snack("Posted successfully");
-          //   enableSubmit()
-          //   displayPosts()
-          // }).catch(err => {
-          //   console.log(err);
-          //   snack("Sorry, an error occured");
-          //   enableSubmit()
-          // })
-
-
-
-          // else {
-          //   postsDoc.set({
-          //     posts: [{
-          //       title: enterTitle.value.trim(),
-          //       content: enterContent.value.trim(),
-          //       id
-          //     }]
-          //   })
-          //   snack("Posted successfully");
-          //   enableSubmit()
-          //   displayPosts()
-          // }
         }
+        enterTitle.value = '';
+        enterContent.value = '';
       })
       .catch(err => log("Error occured while submitting the post", err))
   }
