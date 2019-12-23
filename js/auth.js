@@ -4,7 +4,7 @@ import { auth, db } from './firebase-stuff'
 
 auth.onAuthStateChanged(user => {
   if (user) {
-    const dbUser = db.collection('users').doc(user.uid);
+    // const dbUser = db.collection('users').doc(user.uid);
     localStorage.setItem('uid', `${user.uid}`);
   }
   else {
@@ -38,23 +38,37 @@ $('#forgot-password a').onclick = () => {
   $('#click-to-login').style.display = "block";
 }
 
-function turnOff() {
+function turnOffSuccess() {
   return setTimeout(() => $('#success').style.display = "none", 2000);
 }
 
 $('#signup-button').onclick = () => {
   let email = $('#signup-email').value.trim();
   let password = $('#signup-password').value.trim();
+  let username = $('#signup-username').value.trim();
+  let rePassword = $('#signup-re-password').value.trim();
 
-  /* DO NOT DELETE */
-  // let username = $('#signup-username').value;
 
-  if (email.length !== 0 && password.length !== 0) {
+  if (
+    email.length !== 0 &&
+    password.length !== 0 &&
+    username.length !== 0 &&
+    rePassword.length !== 0 &&
+    rePassword === password
+  ) {
     auth.createUserWithEmailAndPassword(email, password)
       .then(cred => {
+        const user = auth.currentUser;
+        return db.collection('users').doc(user.uid).set({
+          profile: {
+            username: username
+          }
+        }).catch(err => console.log("Error occured while saving user data", err))
+      })
+      .then(() => {
+        const user = auth.currentUser;
         $('#signup-form').reset();
         $('#success').style.display = "block";
-        const user = auth.currentUser;
         user.sendEmailVerification()
           .then(() => {
             $('#success').style.color = "#0ca3d2";
@@ -63,7 +77,8 @@ $('#signup-button').onclick = () => {
           .catch(err => {
             console.log(err)
           });
-        setTimeout(() => $('#success').style.display = "none", 2000);
+        turnOffSuccess()
+        window.location.replace("./app/index.html")
       })
       .catch(err => {
         console.log(err)
@@ -71,8 +86,7 @@ $('#signup-button').onclick = () => {
         $('#success').textContent = err.message;
         $('#success').style.color = "red";
         setTimeout(() => $('#success').style.display = "none", 2000);
-      }
-    )
+      })
   }
 }
 $('#login-button').onclick = () => {
@@ -84,9 +98,8 @@ $('#login-button').onclick = () => {
       $('#success').style.display = "block";
       $('#success').style.color = "#0ca3d2";
       $('#success').textContent = "Login Successful";
-      setTimeout(() => $('#success').style.display = "none", 2000);
-      $('.continue-to-app').style.display = 'flex';
-      localStorage.setItem('current user', `${auth.currentUser.email}`)
+      turnOffSuccess()
+      window.location.replace("./app/index.html")
     }
     ).catch(err => {
       $('#success').style.display = "block";

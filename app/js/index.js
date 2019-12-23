@@ -1,29 +1,8 @@
 const $ = n => document.querySelector(n);
 const log = console.log;
 
-import { db } from '../../js/firebase-stuff'
+import { db, auth } from '../../js/firebase-stuff'
 import { snack } from './utils'
-const uid = localStorage.getItem('uid');
-
-$('#current-user-display-name').textContent = localStorage.getItem('current user');
-$('#current-user-display-name').style.color = "#fff";
-
-const nodes = {
-  enterTitle: $('.enter-title'),
-  enterContent: $('.enter-content'),
-  submitPost: $('.submit-post'),
-  normalPostFlow: $('.normal-post-flow'),
-  updatePost: $('.update-post'),
-  enterPost: document.querySelectorAll('.enter-post')
-}
-
-const { enterTitle,
-  enterContent,
-  submitPost,
-  normalPostFlow,
-  updatePost,
-  enterPost
-} = nodes;
 
 db.enablePersistence()
   .catch(err => {
@@ -37,7 +16,42 @@ db.enablePersistence()
     }
   })
 
+const uid = localStorage.getItem('uid');
 const postsDoc = db.collection('users').doc(uid);
+
+
+postsDoc.get().then(res => {
+  if (res.data().profile) {
+    $('#current-user-display-name').textContent = res.data().profile.username;
+  }
+})
+
+$('#current-user-display-name').style.color = "#fff";
+
+const nodes = {
+  enterTitle: $('.enter-title'),
+  enterContent: $('.enter-content'),
+  submitPost: $('.submit-post'),
+  normalPostFlow: $('.normal-post-flow'),
+  updatePost: $('.update-post'),
+  enterPost: document.querySelectorAll('.enter-post'),
+  logout: $('#logout')
+}
+
+const { enterTitle,
+  enterContent,
+  submitPost,
+  normalPostFlow,
+  updatePost,
+  enterPost,
+  logout
+} = nodes;
+
+logout.onclick = () => {
+  auth.signOut()
+    .then(window.location.replace("../"))
+}
+
 displayPosts()
 
 
@@ -57,7 +71,7 @@ function deletePost(id) {
     .then(res => {
       const newPosts = res.data().posts.filter(x => x.id !== +id);
       if (navigator.onLine) {
-        postsDoc.set({ posts: newPosts })
+        postsDoc.set({ ...res.data(), posts: newPosts })
           .then(() => {
             snack("Delete Successful!")
             displayPosts();
@@ -68,7 +82,7 @@ function deletePost(id) {
           })
       }
       else {
-        postsDoc.set({ posts: newPosts })
+        postsDoc.set({ ...res.data(), posts: newPosts })
         snack("Delete Successful!")
         displayPosts();
       }
@@ -149,6 +163,8 @@ function disableSubmit() {
 function enableSubmit() {
   submitPost.disabled = false;
   submitPost.style.cursor = 'pointer';
+  enterTitle.value = '';
+  enterContent.value = '';
 }
 
 function handleSubmit(id) {
@@ -156,7 +172,7 @@ function handleSubmit(id) {
     disableSubmit();
     postsDoc.get()
       .then(res => {
-        if (res.data()) {
+        if (res.data().posts) {
           let prevPosts = res.data().posts;
           if (id) {
             prevPosts = res.data().posts.filter(x => x.id !== id);
@@ -172,7 +188,7 @@ function handleSubmit(id) {
 
           if (navigator.onLine) {
             if (res.data().posts.length > 0) {
-              postsDoc.set({ posts: [...prevPosts, newPost] })
+              postsDoc.set({ ...res.data(), posts: [...prevPosts, newPost] })
                 .then(() => {
                   snack("Posted successfully");
                   enableSubmit()
@@ -185,6 +201,7 @@ function handleSubmit(id) {
             }
             else {
               postsDoc.set({
+                ...res.data(),
                 posts: [{
                   id: 1,
                   title: enterTitle.value.trim(),
@@ -205,13 +222,14 @@ function handleSubmit(id) {
           }
           else {
             if (res.data().posts.length > 0) {
-              postsDoc.set({ posts: [...prevPosts, newPost] })
+              postsDoc.set({ ...res.data(), posts: [...prevPosts, newPost] })
               snack("Posted successfully");
               displayPosts()
               enableSubmit()
             }
             else {
               postsDoc.set({
+                ...res.data(),
                 posts: [{
                   id: 1,
                   title: enterTitle.value.trim(),
@@ -227,6 +245,7 @@ function handleSubmit(id) {
         else {
           postsDoc.get().then(res => {
             postsDoc.set({
+              ...res.data(),
               posts: [{
                 id: 1,
                 title: enterTitle.value.trim(),
@@ -244,8 +263,6 @@ function handleSubmit(id) {
               })
           })
         }
-        enterTitle.value = '';
-        enterContent.value = '';
       })
       .catch(err => log("Error occured while submitting the post", err))
   }
@@ -257,7 +274,7 @@ function displayPosts() {
   postsDoc.get()
     .then(res => {
       let a = '';
-      if (res.data()) {
+      if (res.data().posts) {
         const posts = res.data().posts.sort((a, b) => b.id - a.id);
         posts.forEach(x => a += postComp(x.title, x.content, x.id))
       }
